@@ -9,7 +9,7 @@
 
 # shake
 
-A menubar macOS app that turns a cursor wiggle into a system-wide selection overlay. Local homage to Google's [Magic Pointer](https://9to5google.com/2026/05/12/deepmind-googlebook-magic-pointer/) — the DeepMind + Chrome feature shipping on Googlebook this fall — except this one runs entirely on your Mac with no cloud, no Gemini, no sign-in.
+A menubar macOS app that turns a cursor wiggle into a system-wide selection overlay. Local homage to Google's Magic Pointer — the DeepMind + Chrome feature shipping on Googlebook this fall — except this one runs entirely on your Mac with no cloud, no Gemini, no sign-in.
 
 Shake the mouse anywhere on screen → the world dims, the element under your cursor stays lit, click to capture it as text or a screenshot, right-click to pin the tray and curate what you grabbed.
 
