@@ -1,19 +1,15 @@
-```
-███████╗██╗  ██╗ █████╗ ██╗  ██╗███████╗
-██╔════╝██║  ██║██╔══██╗██║ ██╔╝██╔════╝
-███████╗███████║███████║█████╔╝ █████╗
-╚════██║██╔══██║██╔══██║██╔═██╗ ██╔══╝
-███████║██║  ██║██║  ██║██║  ██╗███████╗
-╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝
-```
+<div align="center">
 
-# shake
+<h1>shake</h1>
 
-> Wiggle the cursor: the element under it lights up, ready for whatever SwiftUI component you plugged in.
+<p><strong>Wiggle the cursor, and the UI element under it lights up for your SwiftUI component.</strong></p>
 
-`macos` · `swiftui` · `accessibility` · `screencapturekit`
+[![macOS](https://img.shields.io/badge/macOS-14%2B-000000?style=flat-square&logo=apple)](Package.swift)
+[![License](https://img.shields.io/github/license/zyx1121/shake?style=flat-square)](LICENSE)
 
-[![Platform](https://img.shields.io/badge/platform-macOS%2014%2B-111111)](Package.swift) &nbsp;[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](#license)
+**English** | [繁體中文](README.zh-TW.md) | [简体中文](README.zh-CN.md)
+
+</div>
 
 ```
 shake (≥4 reversals, ≥200px, under 0.4s) → dim + spotlight → left-click captures → right-click pins
@@ -23,34 +19,32 @@ shake (≥4 reversals, ≥200px, under 0.4s) → dim + spotlight → left-click 
 [DebugLog] overlay pinned=true
 ```
 
-<sub>The menubar popover shows this same log live, plus Accessibility / Screen Recording permission status.</sub>
+macOS uses a cursor shake only to make the pointer bigger. shake gives the gesture a job: wiggle anywhere, and the element under the cursor lights up for the SwiftUI components that you plug in. Click-to-capture ships as the reference component. It is a local take on Google's Magic Pointer, on your own stack.
 
-macOS already binds cursor shake to "find my pointer," which wastes a good gesture on locating a cursor you can already see. shake reclaims it: wiggle anywhere on screen and the UI element under the cursor lights up, ready for whatever SwiftUI component you plug in (click-to-capture ships as the reference). It's a local homage to Google's Magic Pointer (DeepMind + Chrome, shipping on Googlebook): same gesture, your own stack instead of Gemini.
+## Features
 
-## Install
+- **Detects a shake**: 4 or more direction changes within 0.4 seconds, with 200 px or more of cursor travel.
+- **Dims and spotlights**: every screen dims, and a cutout follows the element under the cursor.
+- **Captures on click**: a left click grabs the element, as text when it has text and as a ScreenCaptureKit screenshot otherwise.
+- **Pins on right click**: the overlay stays, so you can move to the tray and clean up captures.
+- **Lives in the menu bar**: the status icon opens a debug popover with the state, the permissions and the event log.
 
-```bash
+## Quick start
+
+```sh
 git clone https://github.com/zyx1121/shake && cd shake
 make run
 ```
 
-> [!NOTE]
-> Requires Xcode 26, Swift 6, macOS 14+. `make run` builds, bundles, and codesigns with whichever Apple Development cert your local keychain has (override `SIGN_ID` in the Makefile for your own). Hardened Runtime is on.
-> Not an SPM library dependency: `Package.swift` declares one `executableTarget`, so this is a fork-and-run menubar app, not something you `import Shake` into another project.
+`make run` builds, bundles and signs the app with the Apple Development certificate in your keychain. Set `SIGN_ID` in the Makefile to use your own. Grant Accessibility and Screen Recording when macOS asks, then shake the cursor over any window.
 
-## What it gives you
+The build needs Xcode 26, Swift 6 and macOS 14 or later.
 
-- **Detects the shake**: ≥4 direction reversals inside 0.4s, ≥200px total cursor travel
-- **Dims and spotlights**: every screen dims, a cutout follows the AX element under the cursor
-- **Captures on click**: left-click while the overlay is up grabs the element (text goes in as text, anything else as a ScreenCaptureKit screenshot)
-- **Pins on right-click**: freezes the overlay so you can mouse onto the tray and clean up captures
-- **Lives in the menubar**: `LSUIElement` app, status bar icon opens a debug popover with state, permissions, and the event log
+## Usage
 
-## Extending: drop in your own component
+To add your own component:
 
-The overlay panel is a list of `AnyOverlayComponent`s plugged into `FollowOverlayController`. Each component is a SwiftUI view that reads `OverlayEnvironment` (observable state plus the command closures the coordinator wires) and never reaches into the coordinator or into other components.
-
-1. Write a SwiftUI view that takes `env: OverlayEnvironment`, plus a `component(env:)` factory:
+1. Write a SwiftUI view that takes `env: OverlayEnvironment`, with a `component(env:)` factory:
 
    ```swift
    // Sources/Shake/Overlay/Components/AskAI.swift
@@ -61,14 +55,13 @@ The overlay panel is a list of `AnyOverlayComponent`s plugged into `FollowOverla
            AnyOverlayComponent(height: { height }, view: { AskAI(env: env) })
        }
        var body: some View {
-           // read env.currentElement / env.session.assets here
+           // read env.currentElement and env.session.assets here
        }
    }
    ```
 
-2. Add whatever state or commands you need next to the existing `removeAsset` / `copyAsset` closures on `OverlayEnvironment`.
-
-3. Wire it in `ShakeCoordinator.init` and append the component to the array:
+2. Add the state or commands that you need next to the `removeAsset` and `copyAsset` closures on `OverlayEnvironment`.
+3. Add the component to the array in `ShakeCoordinator.init`:
 
    ```swift
    self.overlay = FollowOverlayController(
@@ -76,46 +69,64 @@ The overlay panel is a list of `AnyOverlayComponent`s plugged into `FollowOverla
        components: [
            ElementHeader.component(env: env),
            CaptureTray.component(env: env),
-           AskAI.component(env: env),   // ← yours
+           AskAI.component(env: env),
        ]
    )
    ```
 
-Heights stack automatically, the panel resizes, and dim/pin/click-interceptor logic stays untouched. Directions people might build: an AskAI prompt bar, a per-card translate button, "send to Notes/Raycast/Things," a fixed-verb compare/synthesize toolbar, or a pin-and-timestamp daily log.
+The heights stack and the panel resizes by itself. A component never reaches into the coordinator or into another component.
 
-## Permissions
+## Configuration
 
-Two TCC entries, both prompted on first launch; the popover surfaces both with badges and deep links into System Settings.
+| Permission | For |
+|------------|-----|
+| Accessibility | `CGEventTap` for the click interceptor, and `AXUIElementCopyElementAtPosition` for the element under the cursor |
+| Screen Recording | `SCScreenshotManager` for screenshots of elements without text |
 
-| Permission | What for |
-|------------|----------|
-| Accessibility | `CGEventTap` for the click interceptor, `AXUIElementCopyElementAtPosition` for reading the element under the cursor |
-| Screen Recording | `SCScreenshotManager` for screenshotting non-text elements (only needed if your components use `Capturer`) |
+The popover shows both permissions with links to System Settings. A stable Team ID keeps the grants across rebuilds.
 
-Stable Team ID means granting once survives `make bundle` rebuilds.
-
-## Code layout
+## How it works
 
 ```
 Sources/Shake/
-├── App/        Coordinator + AppDelegate + entry
-├── Core/       Asset · OverlayInfo · SelectionSession · DebugLog · PermissionMonitor
-├── Capture/    ShakeDetector · ClickInterceptor · AXProbe · Capturer
-├── Overlay/    OverlayPanel · OverlayEnvironment · OverlayView · DimOverlayController · FollowOverlayController
-│   └── Components/   ElementHeader · CaptureTray   ← drop your own here
+├── App/        coordinator, app delegate and entry point
+├── Core/       Asset, OverlayInfo, SelectionSession, DebugLog, PermissionMonitor
+├── Capture/    ShakeDetector, ClickInterceptor, AXProbe, Capturer
+├── Overlay/    OverlayPanel, OverlayEnvironment, OverlayView, DimOverlayController, FollowOverlayController
+│   └── Components/   ElementHeader, CaptureTray: your components go here
 └── Status/     DebugMonitorView
 ```
 
-`App/` / `Core/` / `Capture/` / `Overlay/` (minus `Components/`) is the framework; `Components/` is where your code goes.
+Everything outside `Overlay/Components/` is the framework. `OverlayEnvironment` and `AnyOverlayComponent` are the only surface that a component uses.
 
-## Status
+## Limits
 
-Hobby project. Single contributor, no roadmap, no API stability, but the surface that matters (`OverlayEnvironment` + `AnyOverlayComponent`) is small and unlikely to thrash.
+- It is a fork-and-run app, not a Swift package that you import.
+- A hobby project with one contributor and no API stability promise.
 
-## Contributing
+## For AI agents
 
-Issues and PRs welcome: start with [CONTRIBUTING.md](https://github.com/zyx1121/.github/blob/main/CONTRIBUTING.md).
+Facts for coding agents and LLM tools. The rules for changing the code are in [AGENTS.md](AGENTS.md).
+
+- **Summary**: Swift 6 macOS menu bar app. A cursor shake spotlights the element under the cursor, and pluggable SwiftUI components act on it.
+- **Type**: app
+- **Interfaces**: menu bar UI and the `AnyOverlayComponent` extension point. No CLI, MCP or HTTP.
+- **Install**: `make run` from a clone
+- **Run**: `make run`
+- **Verify**: `make bundle` succeeds, then a shake shows the overlay and the debug log prints `shake #1 overlay=shown`
+- **Config**: `SIGN_ID` in the Makefile, Accessibility and Screen Recording permissions
+- **Secrets**: none
+- **Limits**: needs Xcode 26 and an Apple Development certificate.
+
+## Development
+
+```sh
+make bundle
+make run
+```
+
+There is no CI. The build needs a Mac with Xcode 26.
 
 ## License
 
-[MIT](LICENSE) · shake it till you make it
+[MIT](LICENSE)
